@@ -7,109 +7,96 @@ This repository contains the codebase for fine-tuning Meta's LLaMA 2 (7B) on a c
 The AAVE corpus is sourced from the [ConvoAAVE-POLLEN](https://github.com/karthiksrikumar/ConvoAAVE-POLLEN) dataset. The raw text file (`data/compiledFINAL.txt`) is automatically downloaded and preprocessed. The corpus contains natural conversational AAVE collected from social media and other informal contexts.
 
 ## Project Structure
+
+```text
+.
 ├── data/
-│ ├── compiledFINAL.txt # Raw AAVE text (downloaded automatically)
-│ └── processed/ # Train/val/test splits after preprocessing
+│   ├── compiledFINAL.txt          # Raw AAVE text (downloaded automatically)
+│   └── processed/                 # Train/val/test splits after preprocessing
 ├── reports/
-│ └── linguistic_report.json # Linguistic feature analysis
-├── config.py # Central configuration (paths, hyperparameters)
-├── data_preprocessing.py # Download, clean, segment, and split data
-├── utils.py # AAVE→MAE rule-based converter, contrastive pair generation
-├── linguistic_analysis.py # POS tagging, dependency parsing, feature extraction
-├── model_training.py # LoRA fine-tuning with DARA contrastive objective
-├── evaluation.py # Perplexity and text generation
+│   └── linguistic_report.json     # Linguistic feature analysis
+├── config.py                      # Central configuration (paths, hyperparameters)
+├── data_preprocessing.py          # Download, clean, segment, and split data
+├── utils.py                       # AAVE→MAE rule-based converter, contrastive pair generation
+├── linguistic_analysis.py         # POS tagging, dependency parsing, feature extraction
+├── model_training.py             # LoRA fine-tuning with DARA contrastive objective
+├── evaluation.py                  # Perplexity and text generation
 ├── README.md
-└── requirements.txt # Python dependencies
+└── requirements.txt              # Python dependencies
+```
 
-
+---
 
 ## Methodology
 
-# AAVE Contrastive Fine-Tuning Framework
+The framework follows a four-stage pipeline designed to preserve dialectal linguistic structure while improving representation quality through contrastive learning.
 
-The contrastive weight `λ` is a hyperparameter that controls the balance between language modeling loss and contrastive learning objectives.
+### 1. Data Collection and Preprocessing
 
-## Usage
+Raw AAVE text is automatically downloaded and stored in `compiledFINAL.txt`. The preprocessing pipeline:
 
-### Installation
+* Cleans and normalizes text
+* Segments documents into training examples
+* Removes malformed entries
+* Creates train, validation, and test splits
 
-```bash
-pip install -r requirements.txt
-python -m spacy download en_core_web_sm
-python -m stanza.download en
-```
+### 2. Linguistic Feature Analysis
 
----
+To characterize the corpus, the system performs:
 
-## Step 1: Preprocess Data
+* Part-of-speech tagging using spaCy
+* Dependency parsing using Stanza
+* Extraction of AAVE-specific grammatical features
+* Frequency analysis of syntactic constructions
 
-```bash
-python data_preprocessing.py
-```
+Results are saved to `reports/linguistic_report.json`.
 
-Downloads the dataset, cleans the text, segments documents, and creates train/validation/test splits.
+### 3. Dialect-Aware Contrastive Learning
 
----
+For each AAVE sentence, a rule-based converter generates a corresponding Mainstream American English (MAE) variant. These paired examples form positive contrastive pairs.
 
-## Step 2: Linguistic Analysis
+The training objective combines:
 
-```bash
-python linguistic_analysis.py
-```
+* Standard causal language modeling loss
+* Contrastive representation loss between dialectal variants
 
-Generates a JSON report containing:
+The total objective is:
 
-* Prevalence of AAVE linguistic features
-* Part-of-speech frequency statistics
-* Dependency relation distributions
-* Corpus-level linguistic summaries
+[
+L = L_{LM} + \lambda L_{contrastive}
+]
 
----
+where:
 
-## Step 3: Fine-Tune the Model
+* (L_{LM}) is the language modeling loss
+* (L_{contrastive}) is the contrastive alignment loss
+* (\lambda) controls the balance between objectives
 
-```bash
-python model_training.py
-```
+### 4. Parameter-Efficient Fine-Tuning
 
-### Requirements
+The framework fine-tunes Llama 2 using:
 
-Access to `meta-llama/Llama-2-7b-hf` from Hugging Face is required.
-
-The training pipeline uses:
-
-* 8-bit quantization
 * LoRA (Low-Rank Adaptation)
-* Contrastive representation learning
+* 8-bit quantization
+* Hugging Face Transformers
+* PEFT
 
-These techniques substantially reduce GPU memory requirements while maintaining performance.
+This substantially reduces memory requirements while preserving model quality.
 
----
+### 5. Evaluation
 
-## Step 4: Evaluate
+Performance is assessed through:
 
-```bash
-python evaluation.py
-```
-
-Computes:
-
-* Test perplexity
-* Generation quality metrics
-* Sample model outputs
-
----
-
-## References
-
-1. Hu, E., et al. (2021). *LoRA: Low-Rank Adaptation of Large Language Models.*
-2. Gao, T., et al. (2021). *SimCSE: Simple Contrastive Learning of Sentence Embeddings.*
-3. Wolfram, W., & Schilling-Estes, N. (2006). *American English: Dialects and Variation.*
-4. Jones, T. (2015). *The AAVE Tense/Aspect System.*
-
----
-
-## License
+* Test set perplexity
+* Qualitative generation analysis
+* Comparison of dialect-sensitive outputs
+* Representation alignment metrics
+References
+Hu, E., et al. (2021). LoRA: Low-Rank Adaptation of Large Language Models.
+Gao, T., et al. (2021). SimCSE: Simple Contrastive Learning of Sentence Embeddings.
+Wolfram, W., & Schilling-Estes, N. (2006). American English: Dialects and Variation.
+Jones, T. (2015). The AAVE Tense/Aspect System.
+License
 
 This project is intended for research purposes only.
 
